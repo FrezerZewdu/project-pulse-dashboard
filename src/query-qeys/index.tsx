@@ -1,0 +1,7 @@
+export const QUERY_KEYS = {
+    ALL_PROJECTS: "ALL_PROJECTS",
+    PROJECT: "PROJECT",
+    TEAMS: "TEAMS"
+
+
+}

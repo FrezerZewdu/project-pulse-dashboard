@@ -1,71 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateProjectModal } from "@/components/forms/create-project-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreVertical, Calendar, Users } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiClient } from "@/lib/api";
+import { Project } from "@/types/project";
+import { Team } from "@/types/team";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Calendar, MoreVertical, Users } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
-const projects = [
-  {
-    id: 1,
-    name: "Mobile App Redesign",
-    description: "Complete overhaul of the mobile user experience",
-    status: "In Progress",
-    priority: "High",
-    deadline: "Mar 15, 2024",
-    team: 5,
-    tasks: { completed: 24, total: 32 },
-  },
-  {
-    id: 2,
-    name: "API Migration",
-    description: "Migrate legacy APIs to new infrastructure",
-    status: "Planning",
-    priority: "Medium",
-    deadline: "Apr 30, 2024",
-    team: 3,
-    tasks: { completed: 5, total: 28 },
-  },
-  {
-    id: 3,
-    name: "Website Refresh",
-    description: "Update landing page and marketing site",
-    status: "In Progress",
-    priority: "High",
-    deadline: "Mar 25, 2024",
-    team: 4,
-    tasks: { completed: 18, total: 30 },
-  },
-  {
-    id: 4,
-    name: "Analytics Dashboard",
-    description: "Build comprehensive analytics and reporting",
-    status: "Review",
-    priority: "Low",
-    deadline: "Mar 10, 2024",
-    team: 2,
-    tasks: { completed: 22, total: 25 },
-  },
-  {
-    id: 5,
-    name: "Security Audit",
-    description: "Complete security review and implementation",
-    status: "Planning",
-    priority: "High",
-    deadline: "May 15, 2024",
-    team: 6,
-    tasks: { completed: 2, total: 45 },
-  },
-  {
-    id: 6,
-    name: "Documentation Update",
-    description: "Refresh all technical and user documentation",
-    status: "In Progress",
-    priority: "Medium",
-    deadline: "Apr 5, 2024",
-    team: 2,
-    tasks: { completed: 12, total: 20 },
-  },
-];
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { queryClient } from "@/providers/query-provider";
+import { toast } from "sonner";
+import { QUERY_KEYS } from "@/query-qeys";
+import { UpdateProjectModal } from "@/components/forms/update-project-modal";
+import { FilterProjectDropdown } from "@/components/shared/filter-project";
 const statusColors = {
   "In Progress": "bg-primary/10 text-primary border-primary/20",
   "Planning": "bg-accent/10 text-accent border-accent/20",
@@ -79,6 +34,49 @@ const priorityColors = {
 };
 
 export default function Projects() {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editableProject, setEditableProject] = useState<Project | null>(null)
+  const [filters, setFilters] = useState({ priority: 'Medium', status: 'Active' });
+
+  const { data: projects, isLoading: loadingProject, error: loadingProjectError } = useQuery<Project[]>({
+    queryKey: ['PROJECTS'],
+    queryFn: async () => {
+      const reposnse = await apiClient.get('/projects')
+      return reposnse.data
+    }
+  })
+
+  const { data: teams = [], isLoading: laodingTeam, error: teamError } = useQuery<Team[]>({
+    queryKey: ['TEAMS'],
+    queryFn: async () => {
+      const reposnse = await apiClient.get('/team')
+      return reposnse.data
+    }
+  })
+
+
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (id: string) => {
+      try {
+
+        const response = apiClient.delete(`/projects/${id}`,)
+        queryClient.invalidateQueries({
+          queryKey: [QUERY_KEYS.ALL_PROJECTS]
+        })
+        toast.error(" project deleted successfully")
+        window.history.back()
+        return response
+
+      } catch (error) {
+        toast.error("Unable to delete project")
+      }
+    },
+  })
+
+  if (loadingProject) return <p>Loading Project</p>
+  if (loadingProjectError) return <p>error with loading projetc {loadingProjectError.message} </p>
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -88,10 +86,8 @@ export default function Projects() {
             Manage and track all your team projects
           </p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Project
-        </Button>
+        <FilterProjectDropdown />
+        <CreateProjectModal teams={teams} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -99,10 +95,32 @@ export default function Projects() {
           <Card key={project.id} className="shadow-sm hover:shadow-md transition-all">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg">{project.name}</CardTitle>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
+                <Link to={`/projects/${project.id}`} >
+                  <CardTitle className="text-lg">{project.name}</CardTitle>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="start">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setEditableProject(project)
+                        setIsEditModalOpen(true)
+
+                      }}
+                    >
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => deleteProjectMutation.mutate(project.id.toString())}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
                 {project.description}
@@ -149,6 +167,13 @@ export default function Projects() {
           </Card>
         ))}
       </div>
+
+      {editableProject &&
+        <UpdateProjectModal
+          exstingProject={editableProject}
+          openEditModal={isEditModalOpen}
+          teams={teams}
+        />}
     </div>
   );
 }
