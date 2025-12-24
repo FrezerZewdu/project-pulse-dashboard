@@ -1,100 +1,64 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, MoreVertical } from "lucide-react";
-
-const teamMembers = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    role: "Product Manager",
-    email: "sarah.j@company.com",
-    initials: "SJ",
-    projects: 8,
-    status: "Active",
-    avatar: "bg-primary",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    role: "Lead Developer",
-    email: "michael.c@company.com",
-    initials: "MC",
-    projects: 12,
-    status: "Active",
-    avatar: "bg-accent",
-  },
-  {
-    id: 3,
-    name: "Emily Rodriguez",
-    role: "UX Designer",
-    email: "emily.r@company.com",
-    initials: "ER",
-    projects: 6,
-    status: "Active",
-    avatar: "bg-green-600",
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    role: "Backend Developer",
-    email: "david.k@company.com",
-    initials: "DK",
-    projects: 10,
-    status: "Active",
-    avatar: "bg-orange-600",
-  },
-  {
-    id: 5,
-    name: "Lisa Anderson",
-    role: "QA Engineer",
-    email: "lisa.a@company.com",
-    initials: "LA",
-    projects: 9,
-    status: "Active",
-    avatar: "bg-purple-600",
-  },
-  {
-    id: 6,
-    name: "James Wilson",
-    role: "Frontend Developer",
-    email: "james.w@company.com",
-    initials: "JW",
-    projects: 7,
-    status: "Active",
-    avatar: "bg-blue-600",
-  },
-  {
-    id: 7,
-    name: "Maria Garcia",
-    role: "Product Designer",
-    email: "maria.g@company.com",
-    initials: "MG",
-    projects: 5,
-    status: "Active",
-    avatar: "bg-pink-600",
-  },
-  {
-    id: 8,
-    name: "Thomas Brown",
-    role: "DevOps Engineer",
-    email: "thomas.b@company.com",
-    initials: "TB",
-    projects: 11,
-    status: "Active",
-    avatar: "bg-indigo-600",
-  },
-];
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Mail, MoreVertical, Search } from "lucide-react";
+import { teamApi, type TeamFilters } from "@/lib/api";
 
 export default function Team() {
+  const [filters, setFilters] = useState<TeamFilters>({});
+
+  const { data: teamMembers, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['team', filters],
+    queryFn: () => teamApi.getAll(filters),
+  });
+
+  const updateFilter = (key: keyof TeamFilters, value: string | undefined) => {
+    setFilters(prev => ({ ...prev, [key]: value || undefined }));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-foreground">Team</h1>
+        <Alert variant="destructive">
+          <AlertDescription>
+            {error instanceof Error ? error.message : 'Failed to load team members'}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Team</h1>
           <p className="text-muted-foreground mt-2">
-            {teamMembers.length} members in your team
+            {teamMembers?.length || 0} members in your team
           </p>
         </div>
         <Button className="gap-2">
@@ -103,50 +67,72 @@ export default function Team() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {teamMembers.map((member) => (
-          <Card key={member.id} className="shadow-sm hover:shadow-md transition-all">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
-                <Avatar className={`h-14 w-14 ${member.avatar}`}>
-                  <AvatarFallback className="text-white text-lg font-semibold">
-                    {member.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <h3 className="font-semibold text-lg text-foreground">
-                    {member.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{member.role}</p>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <span>{member.email}</span>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-border">
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Projects: </span>
-                    <span className="font-semibold text-foreground">
-                      {member.projects}
-                    </span>
-                  </div>
-                  <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
-                    {member.status}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Search */}
+      <div className="max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search team members..."
+            value={filters.search || ''}
+            onChange={(e) => updateFilter('search', e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </div>
+
+      {/* Team Grid */}
+      {teamMembers && teamMembers.length === 0 ? (
+        <Alert>
+          <AlertDescription>
+            No team members found. {filters.search && 'Try adjusting your search.'}
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {teamMembers?.map((member) => (
+            <Card key={member.id} className="shadow-sm hover:shadow-md transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <Avatar className={`h-14 w-14 ${member.avatar}`}>
+                    <AvatarFallback className="text-white text-lg font-semibold">
+                      {member.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-lg text-foreground">
+                      {member.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{member.role}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span>{member.email}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-border">
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Projects: </span>
+                      <span className="font-semibold text-foreground">
+                        {member.projects}
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                      {member.status}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,25 @@
 # Frontend Developer Assessment - Project Pulse Dashboard
 
+⚠️ **NOTICE: This assessment has been updated!**
+
+## 🔄 New Version Available
+
+This repository now includes a **revised 3-hour assessment** that focuses on:
+- ✅ Algorithmic thinking and problem-solving
+- ✅ Custom algorithm implementation
+- ✅ Data structures and optimization
+- ✅ Better prediction of technical interview success
+
+👉 **See `ASSESSMENT.md` and `README-ASSESSMENT.md` for the new focused assessment.**
+
+The basic API integration, filtering, and UI work has been **pre-implemented** so candidates can focus on demonstrating algorithmic skills.
+
+---
+
+## Original Assessment (Below)
+
+This was the original assessment. It's still valid, but the new version (above) is recommended for better evaluation of problem-solving skills.
+
 Welcome! This assessment will evaluate your frontend development skills by having you implement several features for the Project Pulse Dashboard application.
 
 ## 📋 Overview
